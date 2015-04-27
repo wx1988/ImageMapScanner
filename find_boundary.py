@@ -1,12 +1,32 @@
+import matplotlib as mpt
+mpt.use('Agg')
+import matplotlib.pyplot as plt
+
 import os
 
 from skimage.segmentation import find_boundaries
 import skimage.io
-
 import gdal, ogr
-import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
+
+def get_fg_mask(im_path):
+    im_data = skimage.io.imread(im_path)
+    im_data = im_data[:,:,0:3]
+    #print im_data.shape
+    r_im_data = np.reshape( im_data, (im_data.shape[0]*im_data.shape[1], im_data.shape[2]))
+    km = KMeans(n_clusters=2)
+    km.fit(r_im_data)
+    mu0 = np.mean( r_im_data[km.labels_ == 0], axis=0)
+    mu1 = np.mean( r_im_data[km.labels_ == 1], axis=0)
+    if sum(mu0) < 10:
+        good_label = 1
+        bg_label = 0
+    else:
+        good_label = 0
+        bg_label = 1
+    mask_data = np.reshape(km.labels_, (im_data.shape[0], im_data.shape[1]) )
+    return mask_data
 
 def do_one(im_path):
     im_data = skimage.io.imread(im_path)
@@ -25,14 +45,16 @@ def do_one(im_path):
         bg_label = 1
 
     mask_data = np.reshape(km.labels_, (im_data.shape[0], im_data.shape[1]) )
+    """
     bd = find_boundaries(
             mask_data, mode='inner', background=bg_label)\
                     .astype(np.uint8)
+                    """
 
     plt.subplot(121)
     plt.imshow(mask_data)
     plt.subplot(122)
-    plt.imshow(bd)
+    #plt.imshow(bd)
     tmpdata = np.ones_like(mask_data).astype(np.float32)
     tmpdata[mask_data == bg_label] = 0
     skimage.io.imsave( './shp/%s'%(im_path), tmpdata)
