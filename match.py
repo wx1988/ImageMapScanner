@@ -1,9 +1,12 @@
 import os
+import matplotlib as mpt
+mpt.use('Agg')
 import matplotlib.pyplot as plt
 import skimage.io
 import numpy as np
 from sklearn.cluster import KMeans
 from scipy.stats import multivariate_normal
+import simplejson
 
 def get_mvn(s_im_data):
     r_s_im_data = np.reshape(
@@ -147,6 +150,7 @@ def do_match(s_im_path, b_im_path):
     print s_im_path, r, c
     #plt.imshow(score)
     #plt.show()
+    return r,c
 
 if __name__ == "__main__":
     #do_match('aimak5-1.png','afghanistan_ethnoling_97.png')
@@ -158,8 +162,15 @@ if __name__ == "__main__":
     #do_match('baloch%d-1.png'%(bid),'afghanistan_ethnoling_97.png')
     #do_match('sparse1-1.png','afghanistan_ethnoling_97.png')
     flist = os.listdir('./')
+    fname2shift = {}
     for fname in flist:
         if fname.count('-1') > 0 and \
-                fname.count('png') > 0 and \
-                not os.path.isfile('./cache/%s_10.npy'%(fname))
-            do_match(fname,'afghanistan_ethnoling_97.png')
+                fname.count('png') > 0:
+            #and \
+            #not os.path.isfile('./cache/%s_10.npy'%(fname)):
+            r,c = do_match(fname,'afghanistan_ethnoling_97.png')
+            fname2shift[fname] = [int(r),int(c)]
+    outf = open('shift.json','w')
+    print>>outf, simplejson.dumps( fname2shift )
+    outf.close()
+    

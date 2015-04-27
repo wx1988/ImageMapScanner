@@ -4,11 +4,15 @@
 # 1. ignore the small polygon, find the largest polygon
 # 2. represent the inner relation
 
+import os
+import matplotlib as mpt
+mpt.use('Agg')
 import matplotlib.pyplot as plt
 import shapefile
 from shapely.geometry import Polygon, Point
 import numpy as np
 from find_boundary import get_fg_mask 
+import simplejson
 
 def draw_shp_polygon(shp_path):
     sr = shapefile.Reader(shp_path)
@@ -18,8 +22,6 @@ def draw_shp_polygon(shp_path):
         #print shape
         #print shape.points
         #if i != 66 and i!= 41:
-        if i!= 41:
-            continue
         tmp_pts = np.array(shape.points)
         print i, tmp_pts.shape
         plt.clf()
@@ -48,11 +50,13 @@ def draw_shp_polygon(shp_path):
                     if tmp_pg.area > 4*4:
                         inter.append( tmp_pts[old_ci:c_i,:] )
         pg = Polygon( exter, inter)
+        if pg.area < 6*6:
+            continue
         for k in range(160,190):
             p = Point(k,150)
             print p, pg.contains(p)
         #plt.show()
-        plt.savefig('./shp/%s-%d.png'%('test',i))
+        plt.savefig('./shp/tmp/%s-%d.png'%(shp_path[shp_path.rindex('/')+1:],i))
 
 def get_shp_index(shp_path,im_path):
     # get the pos for the good_label
@@ -88,6 +92,7 @@ def get_shp_index(shp_path,im_path):
                         inter.append( tmp_pts[old_ci:c_i,:] )
         pg = Polygon( exter, inter)
         if pg.area < 16:
+            pg_list.append(None)
             continue
         pg_list.append(pg)
         score = 0
@@ -99,9 +104,33 @@ def get_shp_index(shp_path,im_path):
         if score > max_score:
             max_score = score
             mi = i
-    print max_score, mi
+    print 'max score',max_score, mi
     return mi, pg_list 
 
+def batch():
+    flist = os.listdir('./')
+    for fname in flist:
+        if fname.count('-1') > 0 and \
+                fname.count('png') > 0:
+            out_path = './shpres/%s.json'%(fname)
+            if os.path.isfile(out_path):
+                continue
+            mi, pg_list = get_shp_index(
+                    './shp/%s.shp'%(fname), fname)
+            #print mi, len(pg_list)
+            pg = pg_list[mi]
+            res = {}
+            res['ext'] = [list(co) for co in pg.exterior.coords]
+            res['intlist'] = []
+            for i in pg.interiors:
+                res['intlist'].append([list(co) for co in i.coords])
+            # write to shpres folder
+            outf = open(out_path,'w')
+            print>>outf, simplejson.dumps( res )
+            outf.close()
+
 if __name__ == "__main__":
-    #draw_shp_polygon('./shp/sparse1-1.png.shp')
-    get_shp_index('./shp/sparse1-1.png.shp', 'sparse1-1.png')
+    #draw_shp_polygon('./shp/push5-1.png.shp')
+    #get_shp_index('./shp/sparse1-1.png.shp', 'sparse1-1.png')
+    batch()
+

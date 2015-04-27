@@ -65,7 +65,14 @@ def do_one(im_path):
 def do_one_shp(im_path):
     #http://www.gdal.org/index.html
     #http://gis.stackexchange.com/questions/78023/gdal-polygonize-lines
-    tmpdatapath = '%s'%(im_path)
+
+    # TODO, create mask image here
+    mask = get_fg_mask(im_path)
+    mask_img = np.ones_like(mask).astype(np.float32)
+    mask_img[mask] = 0
+    skimage.io.imsave('./mask/%s'%(im_path), mask_img)
+
+    tmpdatapath = './mask/%s'%(im_path)
     raster = gdal.Open(tmpdatapath)
     band = raster.GetRasterBand(1)
     
