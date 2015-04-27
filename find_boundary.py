@@ -19,13 +19,15 @@ def get_fg_mask(im_path):
     km.fit(r_im_data)
     mu0 = np.mean( r_im_data[km.labels_ == 0], axis=0)
     mu1 = np.mean( r_im_data[km.labels_ == 1], axis=0)
-    if sum(mu0) < 10:
+    print mu0,mu1
+    if sum(mu0) < 30:
         good_label = 1
         bg_label = 0
     else:
         good_label = 0
         bg_label = 1
-    mask_data = np.reshape(km.labels_, (im_data.shape[0], im_data.shape[1]) )
+
+    mask_data = np.reshape(km.labels_==good_label, (im_data.shape[0], im_data.shape[1]) )
     return mask_data
 
 def do_one(im_path):
@@ -59,8 +61,11 @@ def do_one(im_path):
     tmpdata[mask_data == bg_label] = 0
     skimage.io.imsave( './shp/%s'%(im_path), tmpdata)
     #plt.show()
-    
-    tmpdatapath = './shp/%s'%(im_path)
+
+def do_one_shp(im_path):
+    #http://www.gdal.org/index.html
+    #http://gis.stackexchange.com/questions/78023/gdal-polygonize-lines
+    tmpdatapath = '%s'%(im_path)
     raster = gdal.Open(tmpdatapath)
     band = raster.GetRasterBand(1)
     
@@ -74,15 +79,12 @@ def do_one(im_path):
     # TODO, what is the data type here?
     gdal.Polygonize(band, None, out_layer, 1)
 
-def do_polygon(im_path):
-    #http://www.gdal.org/index.html
-    #http://gis.stackexchange.com/questions/78023/gdal-polygonize-lines
-
-    pass
-
-
 if __name__ == "__main__":
     #im_path = "aimak1-1.png"
-    im_path = "sparse1-1.png"
-    do_one(im_path)
+    #im_path = "sparse1-1.png"
+    flist = os.listdir('./')
+    for fname in flist:
+        if fname.count('-1') > 0 and \
+                fname.count('png') > 0:
+            do_one_shp(fname)
     #do_polygon(im_path)

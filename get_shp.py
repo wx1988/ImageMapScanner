@@ -17,7 +17,8 @@ def draw_shp_polygon(shp_path):
     for i,shape in enumerate(shapes):
         #print shape
         #print shape.points
-        if i != 66:
+        #if i != 66 and i!= 41:
+        if i!= 41:
             continue
         tmp_pts = np.array(shape.points)
         print i, tmp_pts.shape
@@ -43,7 +44,9 @@ def draw_shp_polygon(shp_path):
                     print exter
                     first_poly = False
                 else:
-                    inter.append( tmp_pts[old_ci:c_i,:] )
+                    tmp_pg = Polygon( tmp_pts[old_ci:c_i,:] )
+                    if tmp_pg.area > 4*4:
+                        inter.append( tmp_pts[old_ci:c_i,:] )
         pg = Polygon( exter, inter)
         for k in range(160,190):
             p = Point(k,150)
@@ -54,6 +57,8 @@ def draw_shp_polygon(shp_path):
 def get_shp_index(shp_path,im_path):
     # get the pos for the good_label
     fg_mask = get_fg_mask(im_path)
+    plt.imshow(fg_mask)
+    plt.show()
     sr = shapefile.Reader(shp_path)
     shapes = sr.shapes()
 
@@ -77,15 +82,20 @@ def get_shp_index(shp_path,im_path):
                     exter = tmp_pts[old_ci:c_i,:]
                     first_poly = False
                 else:
-                    inter.append( tmp_pts[old_ci:c_i,:] )
+                    # TODO, if area less than 4*4, then remove
+                    tmp_pg = Polygon( tmp_pts[old_ci:c_i,:] )
+                    if tmp_pg.area > 4*4:
+                        inter.append( tmp_pts[old_ci:c_i,:] )
         pg = Polygon( exter, inter)
+        if pg.area < 16:
+            continue
         pg_list.append(pg)
         score = 0
         for ii in range(fg_mask.shape[0]):
             for jj in range(fg_mask.shape[1]):
                 if fg_mask[ii,jj] and pg.contains( Point(ii,jj)):
                     score += 1
-        print i, score
+        print i, score, pg.area
         if score > max_score:
             max_score = score
             mi = i
