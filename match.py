@@ -1,6 +1,6 @@
 import os
 import matplotlib as mpt
-mpt.use('Agg')
+#mpt.use('Agg')
 import matplotlib.pyplot as plt
 import skimage.io
 import numpy as np
@@ -8,26 +8,16 @@ from sklearn.cluster import KMeans
 from scipy.stats import multivariate_normal
 import simplejson
 
+from get_fg_mask import get_fg_mask_data
+
 def get_mvn(s_im_data):
     r_s_im_data = np.reshape(
             s_im_data, 
             (s_im_data.shape[0]* s_im_data.shape[1], s_im_data.shape[2]))
-
-    km = KMeans(n_clusters=2)
-    km.fit(r_s_im_data)
-    mu0 = np.mean( r_s_im_data[km.labels_ == 0], axis=0)
-    mu1 = np.mean( r_s_im_data[km.labels_ == 1], axis=0)
-    if sum(mu0) < 10:
-        good_label = 1
-    else:
-        good_label = 0
-    mask_data = r_s_im_data[ km.labels_ == good_label]
-    
-    mask = np.reshape(
-            km.labels_ == good_label, 
-            (s_im_data.shape[0], s_im_data.shape[1]))
-    #plt.imshow(mask)
-    #plt.show()
+    mask = get_fg_mask_data(s_im_data) 
+    mask_ravel = np.reshape( mask, (s_im_data.shape[0]*s_im_data.shape[1],1))
+    mask_data = r_s_im_data[np.where(mask_ravel)[0],:]
+    #print mask_data.shape, r_s_im_data.shape
 
     mu = np.mean(mask_data ,axis=0)
     n_mask_data = mask_data -mu 
@@ -35,7 +25,7 @@ def get_mvn(s_im_data):
 
     #print n_mask_data
     #print np.mean(n_mask_data, axis=0)
-    print sigma
+    print mu, sigma
     return mu, sigma, mask
 
 def gen_prob(s_im_info, b_im_data):
@@ -76,17 +66,28 @@ def do_match(s_im_path, b_im_path,cache_folder='./cache'):
     s_im_path, the full path for small image
     b_im_path, the full path for large image
     """
+    
     # Some improvement could be made, 
     # 1. use GPU to speed up
     # 2. enlarge the image to include more boundary
     # read data
+    debug = True
+
     if s_im_path.count( '/' ) > 0:
         s_im_name = s_im_path[s_im_path.rindex('/')+1:]
     else:
         s_im_name = s_im_path
     s_im_data = skimage.io.imread(s_im_path)
-    s_im_data = s_im_data[:,:,0:3]
 
+    # TODo, for the transparent part
+    #print s_im_data.shape
+    #print s_im_data[:,:,3]
+    #exit()
+
+    s_im_data = s_im_data[:,:,0:3]
+    if debug:
+        plt.imshow(s_im_data)
+        plt.show()
     # add ten pixel to each dimension, to enhance the boundary condition
     shift = 10
     tmp_s_im_data = np.zeros( (s_im_data.shape[0]+2*shift, s_im_data.shape[1]+2*shift,3))
@@ -105,8 +106,9 @@ def do_match(s_im_path, b_im_path,cache_folder='./cache'):
     max_pdf = multivariate_normal.pdf( mu, mean=mu, cov=sigma)
     log_minus1_prob_mask = np.log(max_pdf-prob_mask)
     #if True:
-    if False:
-        print max_pdf
+    #if False:
+    if debug:
+        print 'max pdf', max_pdf
         print log_prob_mask
         print np.sum(np.isnan(log_prob_mask))
         print log_minus1_prob_mask
@@ -117,7 +119,7 @@ def do_match(s_im_path, b_im_path,cache_folder='./cache'):
         plt.subplot(122)
         plt.imshow(log_minus1_prob_mask)
         plt.show()
-        return
+        #return
 
     # iterate through all possible
     cache_path = '%s/%s_%d.npy'%(
@@ -161,7 +163,7 @@ def do_match(s_im_path, b_im_path,cache_folder='./cache'):
     #plt.show()
     return r,c
 
-def batch(folder, full_im_name, cache_folder,out_path):
+def batch(folder, full_im_name, cache_folder,out_path,rev=False):
     """
     folder, the folder hold all image files
     full_im_name, the image to be matched
@@ -169,7 +171,9 @@ def batch(folder, full_im_name, cache_folder,out_path):
     flist = os.listdir(folder)
     fname2shift = {}
     #for fname in flist:
-    for fname in reversed(flist):
+    if rev:
+        flist = reversed(flist)
+    for fname in flist:
         if fname.count('-1') > 0 and \
                 fname.count('png') > 0:
             #and \
@@ -196,7 +200,7 @@ if __name__ == "__main__":
     #bid = 3
     #do_match('baloch%d-1.png'%(bid),'afghanistan_ethnoling_97.png')
     #do_match('sparse1-1.png','afghanistan_ethnoling_97.png')
-    batch('./opium','2012.png','./opium_cache','opium_shift.json') 
-    #batch('./taliban','talibancontrol.gif','./taliban_cache','taliban_shift.json') 
-
+    #batch('./opium','2012-clean.png','./opium_cache','opium_shift.json') 
+    #batch('./taliban','talibancontrol.png','./taliban_cache','taliban_shift.json') 
+    do_match('./taliban/mc1-1.png','./taliban/talibancontrol.png','./taliban_cache')
    

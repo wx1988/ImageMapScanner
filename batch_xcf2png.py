@@ -13,6 +13,9 @@ def do(folder):
         cmd = 'convert %s %s'%(fname, fname.replace('xcf','png'))
         print cmd
         os.system(cmd)
+        im_name = fname[:fname.rindex('.')]
+        cmd2 = 'convert %s-1.png -background white -alpha remove %s-1.png'%(im_name, im_name)
+        os.system(cmd2)
 
 
 if __name__ == "__main__":

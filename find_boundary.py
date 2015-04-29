@@ -1,3 +1,4 @@
+import sys
 import os
 import simplejson
 
@@ -17,7 +18,7 @@ from shapely.geometry import Polygon, Point
 
 from get_fg_mask import get_fg_mask
 
-def do_one_shp(im_name):
+def do_one_shp(im_name,folder='./rawdata'):
     """
     given the image find and get the polygon
     """
@@ -25,7 +26,7 @@ def do_one_shp(im_name):
 
     # create mask image here, 
     # generate the shp based on these data
-    im_path = './rawdata/%s'%(im_name)
+    im_path = '%s/%s'%(folder,im_name)
     mask = get_fg_mask(im_path)
     mask_img = np.ones_like(mask).astype(np.float32)
     mask_img[mask] = 0
@@ -84,9 +85,9 @@ def debug_show_shp(fname):
         #plt.show()
         plt.savefig('./shp/tmp/%s-%d.png'%(shp_path[shp_path.rindex('/')+1:],i))
 
-def get_shp_index(im_name,debug=False):
+def get_shp_index(im_name,debug=False,folder='./rawdata'):
     shp_path = './shp/%s.shp'%(im_name)
-    im_path = './rawdata/%s'%(im_name)
+    im_path = '%s/%s'%(folder,im_name)
     # get the pos for the good_label
     fg_mask = get_fg_mask(im_path)
     if debug:
@@ -129,8 +130,11 @@ def get_shp_index(im_name,debug=False):
         for ii in range(fg_mask.shape[0]):
             for jj in range(fg_mask.shape[1]):
                 # NOTE, the Point with first dimension as col, second dimension as row
-                if fg_mask[ii,jj] and pg.contains( Point(jj,ii)):
-                    score += 1
+                try:
+                    if fg_mask[ii,jj] and pg.contains( Point(jj,ii)):
+                        score += 1
+                except Exception as e:
+                    print e
         print i, score, pg.area
         if score > max_score:
             max_score = score
@@ -138,15 +142,15 @@ def get_shp_index(im_name,debug=False):
     print 'max score',max_score, mi
     return mi, pg_list 
 
-def batch_find_json():
-    flist = os.listdir('./rawdata')
+def batch_find_json(folder='./rawdata'):
+    flist = os.listdir(folder)
     for fname in flist:
         if fname.count('-1') > 0 and \
                 fname.count('png') > 0:
             out_path = './shpres/%s.json'%(fname)
             if os.path.isfile(out_path):
                 continue
-            mi, pg_list = get_shp_index(fname)
+            mi, pg_list = get_shp_index(fname,folder=folder)
             #print mi, len(pg_list)
             pg = pg_list[mi]
             res = {}
@@ -159,9 +163,14 @@ def batch_find_json():
             print>>outf, simplejson.dumps( res )
             outf.close()
 
+
 if __name__ == "__main__":
-    debug = True
-    #debug = False
+    folder = sys.argv[1]
+    batch_find_json(folder)
+    exit()
+
+    #debug = True
+    debug = False
     if debug:
         fname = "aimak1-1.png"
         #im_name = "sparse1-1.png"
@@ -171,10 +180,10 @@ if __name__ == "__main__":
         #get_shp_index(fname,True)
         exit()
     else:
-        batch_find_json()
-        exit()
-        flist = os.listdir('./rawdata')
+        flist = os.listdir(folder)
         for fname in flist:
+            print 'working on', fname
             if fname.count('-1') > 0 and \
                     fname.count('png') > 0:
-                do_one_shp(fname)
+                do_one_shp(fname,folder=folder)
+

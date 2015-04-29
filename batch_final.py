@@ -12,10 +12,12 @@ import re
 
 import numpy as np
 import skimage.io
-from pix2latlon import pix2ll
+from pix2latlon import pix2ll_interpolate_warp as pix2ll
 
-shift_path = 'shift.json'
+t = 'opium'
+shift_path = '%s_shift.json'%(t)
 shift_dict = simplejson.load(open(shift_path))
+
 
 def show(im_name):
     # load the polygon data for each region
@@ -60,7 +62,7 @@ def pg_pix2latlon_strdf(im_name):
     exter = np.array(pg['ext'])
     exter[:,0] += cs
     exter[:,1] += rs
-    ex_lonlat = pix2ll(exter)
+    ex_lonlat = pix2ll(exter,t)
     ex_str = ','.join(['%f %f'%(ell[0],ell[1]) for ell in ex_lonlat])
     print np.min(ex_lonlat,axis=0)
     print np.max(ex_lonlat,axis=0)
@@ -73,7 +75,7 @@ def pg_pix2latlon_strdf(im_name):
         np_inter = np.array(inter)
         np_inter[:,0] += cs
         np_inter[:,1] += rs
-        np_inter = pix2ll(np_inter)
+        np_inter = pix2ll(np_inter,t)
         in_str = ','.join(['%f %f'%(ill[0],ill[1]) for ill in np_inter])
         in_str_list.append(in_str)
     p_str = 'POLYGON('
@@ -85,29 +87,30 @@ def pg_pix2latlon_strdf(im_name):
     #print p_str
     return p_str
 
-def export_n3():
-    out_path = 'ethno.nt'
+def export_n3_full(out_path, predicate, folder):
+
+    #out_path = 'ethno.nt'
     outf = open(out_path,'w')
     print>>outf,'@prefix\tmech:\t<http://students.cse.tamu.edu/xingwang/semanticweb/mech#>.'
     print>>outf,'@prefix\tstrdf:\t<http://strdf.di.uoa.gr/ontology#>.'
     # gen data here 
-    flist = os.listdir('./rawdata')
+    flist = os.listdir(folder)
     for fname in flist: 
         if fname.count('-1') > 0 and fname.count('png') > 0:
             print fname
             pg_str = pg_pix2latlon_strdf(fname) 
             tmp_str = 'mech:%s\n'%(fname[:fname.index('.')].replace('-','_'))
             m = re.search('[a-zA-Z]+',fname)
-            tmp_str += '\tmech:ethnic\tmech:%s;\n'%(m.group())
+            tmp_str += '\tmech:%s\tmech:%s;\n'%(predicate, m.group())
             tmp_str += '\tstrdf:hasGeometry\t"%s"^^strdf:WKT.'%(pg_str)
             print>>outf,tmp_str
     outf.close()
-
 
 if __name__ == "__main__":
     #pg_pix2latlon_strdf('push5-1.png')
     #pg_pix2latlon_strdf('tajik11-1.png')
     #exit()
     #export_n3()
-
+    export_n3_full( 'opium.nt', 'opiumprod', './opium')
+    #export_n3_full( 'taliban.nt', 'talibancontrol', './taliban')
    

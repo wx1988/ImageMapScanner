@@ -102,10 +102,86 @@ def pix2ll(pts_list):
     #print res
     return res
 
+def pix2ll_interpolate(pts_list, ref_list):
+
+    # expand the ref_list into xlist and ylist
+    xlist = []
+    ylist = []
+    lonlist = []
+    latlist = []
+    for ref in ref_list:
+        if not np.isnan( ref[1][0] ):
+            lonlist.append(ref[1][0] )
+            xlist.append( ref[0][0] )
+        if not np.isnan( ref[1][1] ):
+            latlist.append( ref[1][1] )
+            ylist.append( ref[0][1] )
+    xlist,ylist,lonlist,latlist = np.array(xlist), \
+            np.array(ylist), np.array(lonlist), np.array(latlist)
+
+    res_list = []
+    for pt in pts_list:
+        print pt
+        # find two near ref point
+        # for x direction
+        x_dist = np.abs(xlist - pt[0])
+        xi = np.argsort(x_dist)
+        x1,x2 = xi[0],xi[1]
+        lon = lonlist[x2]*(pt[0]-xlist[x1])+\
+                lonlist[x1]*(xlist[x2]-pt[0])
+        lon /= (xlist[x2]-xlist[x1])
+
+        # for y direction
+        y_dist = np.abs(ylist - pt[1])
+        yi = np.argsort(y_dist)
+        y1,y2 = yi[0],yi[1]
+        lat = latlist[y2]*(pt[1]-ylist[y1])+\
+                latlist[y1]*(ylist[y2]-pt[1])
+        lat /= (ylist[y2]-ylist[y1])
+        res_list.append( [lon,lat])    
+    return np.array(res_list)
+
+def pix2ll_interpolate_warp(pts_list, t='ethno'):
+    if t == 'ethno':
+        return pix2ll(pts_list)
+    elif t == 'opium':
+        return pix2ll_interpolate(pts_list, opium_list)
+    elif t == 'taliban':
+        return pix2ll_interpolate(pts_list, taliban_list)
+    else:
+        raise Exception('unknown data source')
+
+def test_interpolate():
+    ref_list = [[[76,238],[61.274014,35.605292]],
+            [[37,789],[60.874806, 29.857932]],
+            [[565,779],[66.372380,29.971172]],
+            [[1092,157],[71.804135,36.401316]],
+            [[582,65],[66.553357,37.355896]]]
+    test_pts = [ [1092,157], [582,65] ]
+    print pix2ll_interpolate( np.array(test_pts), ref_list)
+
+opium_list = [[[76,238],[61.274014,35.605292]],
+            [[37,789],[60.874806, 29.857932]],
+            [[565,779],[66.372380,29.971172]],
+            [[1092,157],[71.804135,36.401316]],
+            [[582,65],[66.553357,37.355896]]]
+
+taliban_list = [[[50,161],[61.274014,35.605292]],
+            [[29,465],[60.874806, 29.857932]],
+            [[319,460],[66.372380,29.971172]],
+            [[608,119],[71.804135,36.401316]],
+            [[328,69],[66.553357,37.355896]]]
+
+
+
 if __name__ == "__main__":
     #get_train_data()
     #exit()
+    test_interpolate()
+    """
     pix_list = [pix for pix,ll in test_list]
     ll_list = [ll for pix,ll in test_list]
     pix2ll(np.array(pix_list))
+    print pix2ll_interpolate( np.array(pix_list), np.vstack((ref_list,ref_list2)) )
+    #"""
     
