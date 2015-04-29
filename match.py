@@ -71,11 +71,19 @@ def match_score(s_im_info, l_im_data):
     return sum(np.log(prob_list))
 
     
-def do_match(s_im_path, b_im_path):
+def do_match(s_im_path, b_im_path,cache_folder='./cache'):
+    """
+    s_im_path, the full path for small image
+    b_im_path, the full path for large image
+    """
     # Some improvement could be made, 
     # 1. use GPU to speed up
     # 2. enlarge the image to include more boundary
     # read data
+    if s_im_path.count( '/' ) > 0:
+        s_im_name = s_im_path[s_im_path.rindex('/')+1:]
+    else:
+        s_im_name = s_im_path
     s_im_data = skimage.io.imread(s_im_path)
     s_im_data = s_im_data[:,:,0:3]
 
@@ -112,7 +120,8 @@ def do_match(s_im_path, b_im_path):
         return
 
     # iterate through all possible
-    cache_path = './cache/%s_%d.npy'%(s_im_path,shift)
+    cache_path = '%s/%s_%d.npy'%(
+            cache_folder,s_im_name,shift)
     if os.path.isfile(cache_path):
         score = np.load(cache_path)
         #print score.shape
@@ -123,7 +132,7 @@ def do_match(s_im_path, b_im_path):
         #score = np.finfo('d').min*np.ones( (b_im_data.shape[0], b_im_data.shape[1] ))
         score = -1000000.*np.ones( (b_im_data.shape[0], b_im_data.shape[1] ))
         for i in range(b_im_data.shape[0]):
-            print 'working on ',i
+            #print 'working on ',i
             # This is too slow, about 1 second per row
             # How to speed up this?
             if i + sh > b_im_data.shape[0]:
@@ -152,6 +161,32 @@ def do_match(s_im_path, b_im_path):
     #plt.show()
     return r,c
 
+def batch(folder, full_im_name, cache_folder,out_path):
+    """
+    folder, the folder hold all image files
+    full_im_name, the image to be matched
+    """
+    flist = os.listdir(folder)
+    fname2shift = {}
+    #for fname in flist:
+    for fname in reversed(flist):
+        if fname.count('-1') > 0 and \
+                fname.count('png') > 0:
+            #and \
+            #not os.path.isfile('./cache/%s_10.npy'%(fname)):
+
+            # TODO, make this folder consistent
+            r,c = do_match(
+                    folder+'/'+fname,
+                    folder+'/'+full_im_name,
+                    cache_folder)
+            fname2shift[fname] = [int(r),int(c)]
+
+    outf = open(out_path,'w')
+    print>>outf, simplejson.dumps( fname2shift )
+    outf.close()
+ 
+
 if __name__ == "__main__":
     #do_match('aimak5-1.png','afghanistan_ethnoling_97.png')
     #do_match('aimak1-1.png','afghanistan_ethnoling_97.png')
@@ -161,16 +196,7 @@ if __name__ == "__main__":
     #bid = 3
     #do_match('baloch%d-1.png'%(bid),'afghanistan_ethnoling_97.png')
     #do_match('sparse1-1.png','afghanistan_ethnoling_97.png')
-    flist = os.listdir('./')
-    fname2shift = {}
-    for fname in flist:
-        if fname.count('-1') > 0 and \
-                fname.count('png') > 0:
-            #and \
-            #not os.path.isfile('./cache/%s_10.npy'%(fname)):
-            r,c = do_match(fname,'afghanistan_ethnoling_97.png')
-            fname2shift[fname] = [int(r),int(c)]
-    outf = open('shift.json','w')
-    print>>outf, simplejson.dumps( fname2shift )
-    outf.close()
-    
+    batch('./opium','2012.png','./opium_cache','opium_shift.json') 
+    #batch('./taliban','talibancontrol.gif','./taliban_cache','taliban_shift.json') 
+
+   

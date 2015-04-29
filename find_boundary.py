@@ -161,13 +161,13 @@ def batch_find_json():
 
 if __name__ == "__main__":
     debug = True
-    debug = False
+    #debug = False
     if debug:
-        #im_name = "aimak1-1.png"
+        fname = "aimak1-1.png"
         #im_name = "sparse1-1.png"
-        fname = 'push11-1.png'
+        #fname = 'push11-1.png'
         #do_one_shp(fname)
-        #debug_show_shp(fname)
+        debug_show_shp(fname)
         #get_shp_index(fname,True)
         exit()
     else:

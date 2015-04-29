@@ -108,6 +108,6 @@ if __name__ == "__main__":
     #pg_pix2latlon_strdf('push5-1.png')
     #pg_pix2latlon_strdf('tajik11-1.png')
     #exit()
-    export_n3()
+    #export_n3()
 
    

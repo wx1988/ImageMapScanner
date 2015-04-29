@@ -1,6 +1,8 @@
 import os
 
-def do():
+def do(folder):
+    os.chdir(folder)
+
     flist = os.listdir('./')
     print flist
     for fname in flist:
@@ -14,4 +16,5 @@ def do():
 
 
 if __name__ == "__main__":
-    do()
+    #do('./opium')
+    do('./taliban')
