@@ -121,7 +121,7 @@ def pix2ll_interpolate(pts_list, ref_list):
 
     res_list = []
     for pt in pts_list:
-        print pt
+        #print pt
         # find two near ref point
         # for x direction
         x_dist = np.abs(xlist - pt[0])
@@ -160,6 +160,15 @@ def test_interpolate():
     test_pts = [ [1092,157], [582,65] ]
     print pix2ll_interpolate( np.array(test_pts), ref_list)
 
+opium_list = [
+            [[37,789],[60.874806, 29.857932]],
+            [[1092,157],[71.804135,36.401316]]]
+
+taliban_list = [
+            [[29,465],[60.874806, 29.857932]],
+            [[608,119],[71.804135,36.401316]]]
+
+"""
 opium_list = [[[76,238],[61.274014,35.605292]],
             [[37,789],[60.874806, 29.857932]],
             [[565,779],[66.372380,29.971172]],
@@ -171,7 +180,7 @@ taliban_list = [[[50,161],[61.274014,35.605292]],
             [[319,460],[66.372380,29.971172]],
             [[608,119],[71.804135,36.401316]],
             [[328,69],[66.553357,37.355896]]]
-
+"""
 
 
 if __name__ == "__main__":

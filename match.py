@@ -1,6 +1,11 @@
+debug = False
+#debug = True
+
+
 import os
 import matplotlib as mpt
-#mpt.use('Agg')
+if not debug:
+    mpt.use('Agg')
 import matplotlib.pyplot as plt
 import skimage.io
 import numpy as np
@@ -10,11 +15,15 @@ import simplejson
 
 from get_fg_mask import get_fg_mask_data
 
+
 def get_mvn(s_im_data):
     r_s_im_data = np.reshape(
             s_im_data, 
             (s_im_data.shape[0]* s_im_data.shape[1], s_im_data.shape[2]))
     mask = get_fg_mask_data(s_im_data) 
+    if debug:
+        plt.imshow(mask)
+        plt.show()
     mask_ravel = np.reshape( mask, (s_im_data.shape[0]*s_im_data.shape[1],1))
     mask_data = r_s_im_data[np.where(mask_ravel)[0],:]
     #print mask_data.shape, r_s_im_data.shape
@@ -66,12 +75,12 @@ def do_match(s_im_path, b_im_path,cache_folder='./cache'):
     s_im_path, the full path for small image
     b_im_path, the full path for large image
     """
+    print s_im_path
     
     # Some improvement could be made, 
     # 1. use GPU to speed up
     # 2. enlarge the image to include more boundary
     # read data
-    debug = True
 
     if s_im_path.count( '/' ) > 0:
         s_im_name = s_im_path[s_im_path.rindex('/')+1:]
@@ -88,9 +97,10 @@ def do_match(s_im_path, b_im_path,cache_folder='./cache'):
     if debug:
         plt.imshow(s_im_data)
         plt.show()
+
     # add ten pixel to each dimension, to enhance the boundary condition
     shift = 10
-    tmp_s_im_data = np.zeros( (s_im_data.shape[0]+2*shift, s_im_data.shape[1]+2*shift,3))
+    tmp_s_im_data = 255*np.ones( (s_im_data.shape[0]+2*shift, s_im_data.shape[1]+2*shift,3))
     tmp_s_im_data[shift:shift+s_im_data.shape[0], shift:shift+s_im_data.shape[1], :] = s_im_data
     s_im_data = tmp_s_im_data
 
@@ -103,16 +113,26 @@ def do_match(s_im_path, b_im_path,cache_folder='./cache'):
 
     prob_mask = gen_prob( (mu,sigma, mask), b_im_data)
     log_prob_mask = np.log(prob_mask)
+    minv = np.nanmin( log_prob_mask[np.logical_not(np.isinf(log_prob_mask))] )
+    log_prob_mask[np.isinf(log_prob_mask)] = minv 
+    #np.finfo(np.float64).min*10e-6
+
     max_pdf = multivariate_normal.pdf( mu, mean=mu, cov=sigma)
     log_minus1_prob_mask = np.log(max_pdf-prob_mask)
+    mminv = np.nanmin(log_minus1_prob_mask[np.logical_not(np.isinf(log_minus1_prob_mask))])
+    log_minus1_prob_mask[np.isinf(log_minus1_prob_mask)] = mminv 
+    #np.finfo(np.float64).min *10e-6
+
+    # TODO, change inf to the smallest value
+
     #if True:
     #if False:
     if debug:
-        print 'max pdf', max_pdf
+        print 'max pdf', max_pdf, 'nanmin', np.nanmin(log_prob_mask)
         print log_prob_mask
-        print np.sum(np.isnan(log_prob_mask))
+        print np.sum(np.isinf(log_prob_mask))
         print log_minus1_prob_mask
-        print np.sum(np.isnan(log_minus1_prob_mask))
+        print np.sum(np.isinf(log_minus1_prob_mask))
 
         plt.subplot(121)
         plt.imshow(log_prob_mask)
@@ -159,8 +179,9 @@ def do_match(s_im_path, b_im_path,cache_folder='./cache'):
     r = pos / score.shape[1] + shift
     c = pos % score.shape[1] + shift
     print s_im_path, r, c
-    #plt.imshow(score)
-    #plt.show()
+    if debug:
+        plt.imshow(score)
+        plt.show()
     return r,c
 
 def batch(folder, full_im_name, cache_folder,out_path,rev=False):
@@ -200,7 +221,8 @@ if __name__ == "__main__":
     #bid = 3
     #do_match('baloch%d-1.png'%(bid),'afghanistan_ethnoling_97.png')
     #do_match('sparse1-1.png','afghanistan_ethnoling_97.png')
-    #batch('./opium','2012-clean.png','./opium_cache','opium_shift.json') 
+    batch('./opium','2012-clean.png','./opium_cache','opium_shift.json',True) 
     #batch('./taliban','talibancontrol.png','./taliban_cache','taliban_shift.json') 
-    do_match('./taliban/mc1-1.png','./taliban/talibancontrol.png','./taliban_cache')
+    #do_match('./taliban/mc1-1.png','./taliban/talibancontrol.png','./taliban_cache')
+    #do_match('./taliban/hr3-1.png','./taliban/talibancontrol.png','./taliban_cache')
    

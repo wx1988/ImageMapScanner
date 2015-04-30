@@ -31,6 +31,7 @@ def do_one_shp(im_name,folder='./rawdata'):
     mask_img = np.ones_like(mask).astype(np.float32)
     mask_img[mask] = 0
     skimage.io.imsave('./mask/%s'%(im_name), mask_img)
+
     tmpdatapath = './mask/%s'%(im_name)
     raster = gdal.Open(tmpdatapath)
     band = raster.GetRasterBand(1)
@@ -142,13 +143,13 @@ def get_shp_index(im_name,debug=False,folder='./rawdata'):
     print 'max score',max_score, mi
     return mi, pg_list 
 
-def batch_find_json(folder='./rawdata'):
+def batch_find_json(folder='./rawdata',overwrite=False):
     flist = os.listdir(folder)
     for fname in flist:
         if fname.count('-1') > 0 and \
                 fname.count('png') > 0:
             out_path = './shpres/%s.json'%(fname)
-            if os.path.isfile(out_path):
+            if os.path.isfile(out_path) and not overwrite:
                 continue
             mi, pg_list = get_shp_index(fname,folder=folder)
             #print mi, len(pg_list)
@@ -166,8 +167,6 @@ def batch_find_json(folder='./rawdata'):
 
 if __name__ == "__main__":
     folder = sys.argv[1]
-    batch_find_json(folder)
-    exit()
 
     #debug = True
     debug = False
@@ -186,4 +185,4 @@ if __name__ == "__main__":
             if fname.count('-1') > 0 and \
                     fname.count('png') > 0:
                 do_one_shp(fname,folder=folder)
-
+        batch_find_json(folder,overwrite=True)

@@ -33,7 +33,7 @@ def do_channel():
 
 def do_get_fg_mask():
     folder = './opium'
-    folder = './taliban'
+    #folder = './taliban'
     flist = os.listdir(folder)
     for fname in flist:
         if fname.endswith('png') and fname.count('-1') > 0:

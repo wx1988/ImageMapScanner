@@ -15,37 +15,9 @@ import skimage.io
 from pix2latlon import pix2ll_interpolate_warp as pix2ll
 
 t = 'opium'
+#t = 'taliban'
 shift_path = '%s_shift.json'%(t)
 shift_dict = simplejson.load(open(shift_path))
-
-
-def show(im_name):
-    # load the polygon data for each region
-    poly_path = './shpres/%s.json'%(im_name)
-    if not os.path.isfile(poly_path):
-        return
-    print 'shift', shift_dict[im_name]
-    rs, cs = shift_dict[im_name]
-
-    pg = simplejson.load(open(poly_path))
-    #print pg
-    exter = np.array(pg['ext'])
-    exter[:,0] += rs
-    exter[:,1] += cs
-    plt.clf()
-    plt.subplot(121)
-    plt.plot(exter[:,0], exter[:,1])
-    plt.subplot(122)
-    imdata = skimage.io.imread('./mask/%s'%(im_name))
-    plt.imshow(imdata)
-    plt.show()
-    #print exter
-    inters = pg['intlist']
-    print inters
-    
-    # get the shift for each region
-    
-    # tranform the pixel position into lat/long
 
 def pg_pix2latlon_strdf(im_name):
     # load the polygon data for each region
@@ -113,4 +85,5 @@ if __name__ == "__main__":
     #export_n3()
     export_n3_full( 'opium.nt', 'opiumprod', './opium')
     #export_n3_full( 'taliban.nt', 'talibancontrol', './taliban')
-   
+    #show( 'taliban/hr3-1.png') 
+    #batch_show()
